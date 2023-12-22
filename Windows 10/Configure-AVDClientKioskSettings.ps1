@@ -217,10 +217,10 @@ Function Get-PendingReboot {
     #>
 	Try {
 	    ## Setting pending values to false to cut down on the number of else statements
-        $RebootPending = $False
+        $RebootPending = $false
 	    $CompPendRen = $false
         $PendFileRename = $false
-        $SCCM = $False
+        $SCCM = $false
 
 	    ## Setting CBSRebootPend to null since not all versions of Windows has this value
 	    $CBSRebootPend = $null
