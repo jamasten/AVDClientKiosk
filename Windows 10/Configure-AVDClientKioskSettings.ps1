@@ -70,7 +70,7 @@ deleted on logoff.
 This switch parameter determines if the latest Remote Desktop client for Windows is automatically downloaded from the Internet and installed
 on the system prior to configuration.
 
-.PARAMETER AllowDisplaySettings
+.PARAMETER ShowDisplaySettings
 This switch parameter determines if the Settings App and Control Panel are restricted to only allow access to the Display Settings page. If this value is not set,
 then the Settings app and Control Panel are not displayed or accessible.
 
@@ -85,47 +85,31 @@ This switch parameter determines if the WMI Event Subscription Filter also monit
 #>
 [CmdletBinding()]
 param (
-    [Parameter(ParameterSetName='Autologon')]
-    [Parameter(ParameterSetName='AVDClientShell')]
-    [Parameter(ParameterSetName='DirectLogon')]
     [version]$Version = '4.6.0',
 
-    [Parameter(ParameterSetName='Autologon')]
-    [Parameter(ParameterSetName='AVDClientShell')]
-    [Parameter(ParameterSetName='DirectLogon')]
+    [switch]$ApplySTIGs,
+
     [ValidateSet('AzureCloud','AzureUSGovernment')]
     [string]$EnvironmentAVD = 'AzureUSGovernment',
 
-    [Parameter(ParameterSetName='Autologon')]
-    [Parameter(ParameterSetName='AVDClientShell')]
-    [Parameter(ParameterSetName='DirectLogon')]
-    [switch]$AVDClientShell,
-
-    [Parameter(ParameterSetName='Autologon')]
-    [Parameter(ParameterSetName='AVDClientShell')]
-    [switch]$AutoLogon,
-
-    [Parameter(ParameterSetName='AVDClientShell')]
-    [Parameter(ParameterSetName='DirectLogon')]
-    [switch]$SharedPC,
-
-    [Parameter(ParameterSetName='Autologon')]
-    [Parameter(ParameterSetName='AVDClientShell')]
-    [Parameter(ParameterSetName='DirectLogon')]
     [switch]$InstallAVDClient,
 
-    [Parameter(ParameterSetName='Autologon')]
-    [Parameter(ParameterSetName='DirectLogon')]
-    [switch]$AllowDisplaySettings,
+    [Parameter(Mandatory, ParameterSetName='AutologonClientShell')]
+    [Parameter(Mandatory, ParameterSetName='DirectLogonClientShell')]
+    [switch]$AVDClientShell,
 
-    [Parameter(ParameterSetName='Autologon')]
-    [Parameter(ParameterSetName='AVDClientShell')]
-    [Parameter(ParameterSetName='DirectLogon')]
-    [switch]$ApplySTIGs,
+    [Parameter(Mandatory, ParameterSetName='AutologonClientShell')]
+    [Parameter(Mandatory, ParameterSetName='AutologonExplorerShell')]
+    [switch]$AutoLogon,
 
-    [Parameter(ParameterSetName='Autologon')]
-    [Parameter(ParameterSetName='AVDClientShell')]
-    [Parameter(ParameterSetName='DirectLogon')]
+    [Parameter(ParameterSetName='DirectLogonClientShell')]
+    [Parameter(ParameterSetName='DirectLogonExplorerShell')]
+    [switch]$SharedPC,
+
+    [Parameter(ParameterSetName='AutologonExplorerShell')]
+    [Parameter(ParameterSetName='DirectLogonExplorerShell')]
+    [switch]$ShowDisplaySettings,
+
     [switch]$Yubikey
 )
 
@@ -558,7 +542,7 @@ If (-not ($AVDClientShell)) {
     Write-Log -EntryType Information -EventId 49 -Message "Creating a custom AVD Shortcut in Start Menu."
     [string]$StringVersion = $Version
     $ObjShell = New-Object -ComObject WScript.Shell
-    $DirsShortcuts = "$env:ProgramData\Microsoft\Windows\Start Menu\Programs", "$env:SystemDrive\Users\Public\Desktop"
+    $DirsShortcuts = "$env:ProgramData\Microsoft\Windows\Start Menu\Programs"
     $LinkRemoteDesktop = "Remote Desktop.lnk"
     $PathLinkRD = Join-Path $DirsShortcuts[0] -ChildPath $LinkRemoteDesktop
     $LocationIcon = $ObjShell.CreateShortcut($PathLinkRD).IconLocation
@@ -635,18 +619,20 @@ Get-ChildItem -Path $DirUserLogos | Copy-Item -Destination "$env:ProgramData\Mic
 # Apply Non-Admin GPO settings
 If ($AVDClientShell) {
     $nonAdminsFile = 'nonadmins-AVDClientShell.txt'
+    $null = cmd /c lgpo.exe /t "$DirGPO\$nonAdminsFile" '2>&1'
+    Write-Log -EntryType Information -EventId 60 -Message "Configured basic Explorer settings for kiosk user via Non-Administrators Local Group Policy Object.`nlgpo.exe Exit Code: [$LastExitCode]"
 } Else {
     $nonAdminsFile = 'nonadmins-ExplorerShell.txt'
-}
-$null = cmd /c lgpo.exe /t "$DirGPO\$nonAdminsFile" '2>&1'
-Write-Log -EntryType Information -EventId 60 -Message "Configured basic Explorer settings for kiosk user via Non-Administrators Local Group Policy Object.`nlgpo.exe Exit Code: [$LastExitCode]"
+    $null = cmd /c lgpo.exe /t "$DirGPO\$nonAdminsFile" '2>&1'
+    Write-Log -EntryType Information -EventId 60 -Message "Configured basic Explorer settings for kiosk user via Non-Administrators Local Group Policy Object.`nlgpo.exe Exit Code: [$LastExitCode]"
 
-if ($ShowDisplaySettings) {
-    $null = cmd /c lgpo.exe /t "$DirGPO\nonadmins-ShowDisplaySettings.txt" '2>&1'
-    Write-Log -EntryType Information -EventId 61 -Message "Restricted Settings App and Control Panel to allow only Display Settings for kiosk user via Non-Administrators Local Group Policy Object.`nlgpo.exe Exit Code: [$LastExitCode]"
-} Else {
-    $null = cmd /c lgpo.exe /t "$DirGPO\nonadmins-HideSettings.txt" '2>&1'
-    Write-Log -EntryType Information -EventId 61 -Message "Hid Settings App and Control Panel for kiosk user via Non-Administrators Local Group Policy Object.`nlgpo.exe Exit Code: [$LastExitCode]"
+    if ($ShowDisplaySettings) {
+        $null = cmd /c lgpo.exe /t "$DirGPO\nonadmins-ShowDisplaySettings.txt" '2>&1'
+        Write-Log -EntryType Information -EventId 61 -Message "Restricted Settings App and Control Panel to allow only Display Settings for kiosk user via Non-Administrators Local Group Policy Object.`nlgpo.exe Exit Code: [$LastExitCode]"
+    } Else {
+        $null = cmd /c lgpo.exe /t "$DirGPO\nonadmins-HideSettings.txt" '2>&1'
+        Write-Log -EntryType Information -EventId 61 -Message "Hid Settings App and Control Panel for kiosk user via Non-Administrators Local Group Policy Object.`nlgpo.exe Exit Code: [$LastExitCode]"
+    }
 }
 
 # Hide Taskbar Tray if no Wifi Adapter Present.

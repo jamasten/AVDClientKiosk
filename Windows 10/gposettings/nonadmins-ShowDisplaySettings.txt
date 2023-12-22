@@ -1,7 +1,7 @@
 User:Non-Administrators
 Software\Microsoft\Windows\CurrentVersion\Policies\Explorer
 SettingsPageVisibility
-SZ:showonly:easeofaccess-display
+SZ:showonly:display
 
 User:Non-Administrators
 Software\Microsoft\Windows\CurrentVersion\Policies\Explorer
