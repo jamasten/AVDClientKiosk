@@ -217,8 +217,11 @@ Function Get-PendingReboot {
     #>
 	Try {
 	    ## Setting pending values to false to cut down on the number of else statements
-	    $CompPendRen,$PendFileRename,$Pending,$SCCM = $false,$false,$false,$false
-                        
+        $RebootPending = $False
+	    $CompPendRen = $false
+        $PendFileRename = $false
+        $SCCM = $False
+
 	    ## Setting CBSRebootPend to null since not all versions of Windows has this value
 	    $CBSRebootPend = $null
 
@@ -263,10 +266,8 @@ Function Get-PendingReboot {
 	    Try {
 	        $CCMClientSDK = Invoke-WmiMethod -ComputerName LocalHost -Namespace 'ROOT\ccm\ClientSDK' -Class 'CCM_ClientUtilities' -Name DetermineIfRebootPending -ErrorAction 'Stop'
 	    } Catch {
-            Write-Host 'In Catch'
 	        $CCMClientSDK = $null
 	    }
-        Write-Host 'Outside Catch'
 
 	    If ($CCMClientSDK) {
 	        If ($CCMClientSDK.ReturnValue -ne 0) {
@@ -275,12 +276,10 @@ Function Get-PendingReboot {
 		    If ($CCMClientSDK.IsHardRebootPending -or $CCMClientSDK.RebootPending) {
 		        $SCCM = $true
 		    }
+	    } Else {
+	        $SCCM = $False
 	    }
-            
-	    Else {
-	        $SCCM = $null
-	    }
-	    $RebootPending = ($CompPendRen -or $CBSRebootPend -or $WUAURebootReq -or $SCCM -or $PendFileRename)
+	    If ($CompPendRen -or $CBSRebootPend -or $WUAURebootReq -or $SCCM -or $PendFileRename) { $RebootPending = $true }
         Return $RebootPending
 
 	} Catch {
