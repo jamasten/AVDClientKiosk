@@ -44,64 +44,87 @@
     https://learn.microsoft.com/en-us/windows/configuration/kiosk-shelllauncher
     https://public.cyber.mil/stigs/gpo/
  
-.Parameter EnvironmentAVD
-    This value determines the Azure environment to which you are connecting. It ultimately determines the Url of the Remote Desktop Feed which
-    varies by environment by setting the $SubscribeUrl variable and replacing placeholders in several files during installation.
-    The list of Urls can be found at
-    https://learn.microsoft.com/en-us/azure/virtual-desktop/users/connect-microsoft-store?source=recommendations#subscribe-to-a-workspace.
 
-.Parameter AVDClientShell
+.PARAMETER Version
+    This version parameter allows tracking of the installed version using configuration management software such as Microsoft Endpoint Manager or Microsoft Endpoint Configuration Manager by querying the value of the registry value: HKLM\Software\Kiosk\version.
+
+.PARAMETER EnvironmentAVD
+This value determines the Azure environment to which you are connecting. It ultimately determines the Url of the Remote Desktop Feed which
+varies by environment by setting the $SubscribeUrl variable and replacing placeholders in several files during installation.
+The list of Urls can be found at
+https://learn.microsoft.com/en-us/azure/virtual-desktop/users/connect-microsoft-store?source=recommendations#subscribe-to-a-workspace.
+
+.PARAMETER AVDClientShell
 This switch parameter determines whether the Windows Shell is replaced by the Remote Desktop client for Windows or remains the default 'explorer.exe'.
 When the default 'explorer' shell is used additional local group policy settings and provisioning packages are applied to lock down the shell.
 
-.Parameter AutoLogon
+.PARAMETER AutoLogon
 This switch parameter determines if autologon is enabled through the Shell Launcher configuration. The Shell Launcher feature will automatically
 create a new user - 'KioskUser0' - which will not have a password and be configured to automatically logon when Windows starts.
 
-.Parameter SharedPC
+.PARAMETER SharedPC
 This switch parameter determines if the computer is setup as a shared PC. The account management process is enabled and all user profiles are automatically
 deleted on logoff.
 
-.Parameter InstallAVDClient
+.PARAMETER InstallAVDClient
 This switch parameter determines if the latest Remote Desktop client for Windows is automatically downloaded from the Internet and installed
 on the system prior to configuration.
 
-.Parameter Version
-This version parameter allows tracking of the installed version using configuration management software such as Microsoft Endpoint Manager or
-Microsoft Endpoint Configuration Manager by querying the value of the registry value: HKLM\Software\Kiosk\version.
+.PARAMETER AllowDisplaySettings
+This switch parameter determines if the Settings App and Control Panel are restricted to only allow access to the Display Settings page. If this value is not set,
+then the Settings app and Control Panel are not displayed or accessible.
 
-.Parameter ApplySTIGs
+.PARAMETER ApplySTIGs
 This switch parameter determines if the latest DoD Security Technical Implementation Guide Group Policy Objects are automatically downloaded
 from https://public.cyber.mil/stigs/gpo and applied via the Local Group Policy Object (LGPO) tool to the system. If they are, then several
 delta settings are applied to allow the system to communicate with Azure Active Directory and complete autologon (if applicable).
 
-.Parameter Yubikey
+.PARAMETER Yubikey
 This switch parameter determines if the WMI Event Subscription Filter also monitors for Yubikey removal.
 
 #>
 [CmdletBinding()]
 param (
     [Parameter(ParameterSetName='Autologon')]
+    [Parameter(ParameterSetName='AVDClientShell')]
+    [Parameter(ParameterSetName='DirectLogon')]
+    [version]$Version = '4.6.0',
+
+    [Parameter(ParameterSetName='Autologon')]
+    [Parameter(ParameterSetName='AVDClientShell')]
     [Parameter(ParameterSetName='DirectLogon')]
     [ValidateSet('AzureCloud','AzureUSGovernment')]
     [string]$EnvironmentAVD = 'AzureUSGovernment',
+
     [Parameter(ParameterSetName='Autologon')]
+    [Parameter(ParameterSetName='AVDClientShell')]
     [Parameter(ParameterSetName='DirectLogon')]
     [switch]$AVDClientShell,
+
     [Parameter(ParameterSetName='Autologon')]
+    [Parameter(ParameterSetName='AVDClientShell')]
     [switch]$AutoLogon,
+
+    [Parameter(ParameterSetName='AVDClientShell')]
     [Parameter(ParameterSetName='DirectLogon')]
     [switch]$SharedPC,
+
     [Parameter(ParameterSetName='Autologon')]
+    [Parameter(ParameterSetName='AVDClientShell')]
     [Parameter(ParameterSetName='DirectLogon')]
     [switch]$InstallAVDClient,
+
     [Parameter(ParameterSetName='Autologon')]
     [Parameter(ParameterSetName='DirectLogon')]
-    [version]$Version = '4.5.0',
+    [switch]$AllowDisplaySettings,
+
     [Parameter(ParameterSetName='Autologon')]
+    [Parameter(ParameterSetName='AVDClientShell')]
     [Parameter(ParameterSetName='DirectLogon')]
     [switch]$ApplySTIGs,
+
     [Parameter(ParameterSetName='Autologon')]
+    [Parameter(ParameterSetName='AVDClientShell')]
     [Parameter(ParameterSetName='DirectLogon')]
     [switch]$Yubikey
 )
@@ -506,11 +529,13 @@ If (-not $AVDClientShell) {
     # Installing provisioning packages. Currently only one is included to hide the pinned items on the left of the Start Menu.
     # No GPO settings are available to do this.
     Write-Log -EntryType Information -EventId 45 -Message "Installing Provisioning Package to remove pinned items from Start Menu"
+    $ProvisioningPackages += (Get-ChildItem -Path $DirProvisioningPackages | Where-Object {$_.Name -like '*PinnedFolders*'}).FullName
+    If (!$ShowDisplaySettings) {
+        $ProvisioningPackages += (Get-ChildItem -Path $DirProvisioningPackages | Where-Object {$_.Name -like '*Settings*'}).FullName
+    }
     If ($AutoLogon) {
         $ProvisioningPackages += (Get-ChildItem -Path $DirProvisioningPackages | Where-Object {$_.Name -like '*Autologon*'}).FullName
-    } Else {
-        $ProvisioningPackages += (Get-ChildItem -Path $DirProvisioningPackages | Where-Object {$_.Name -notlike '*Autologon*' -and $_.Name -like '*StartMenu*'}).FullName
-    }    
+    } 
     New-Item -Path "$DirKiosk\ProvisioningPackages" -ItemType Directory -Force | Out-Null
     ForEach ($Package in $ProvisioningPackages) {
         Copy-Item -Path $Package -Destination "$DirKiosk\ProvisioningPackages" -Force
@@ -615,6 +640,14 @@ If ($AVDClientShell) {
 }
 $null = cmd /c lgpo.exe /t "$DirGPO\$nonAdminsFile" '2>&1'
 Write-Log -EntryType Information -EventId 60 -Message "Configured basic Explorer settings for kiosk user via Non-Administrators Local Group Policy Object.`nlgpo.exe Exit Code: [$LastExitCode]"
+
+if ($ShowDisplaySettings) {
+    $null = cmd /c lgpo.exe /t "$DirGPO\nonadmins-ShowDisplaySettings.txt" '2>&1'
+    Write-Log -EntryType Information -EventId 61 -Message "Restricted Settings App and Control Panel to allow only Display Settings for kiosk user via Non-Administrators Local Group Policy Object.`nlgpo.exe Exit Code: [$LastExitCode]"
+} Else {
+    $null = cmd /c lgpo.exe /t "$DirGPO\nonadmins-HideSettings.txt" '2>&1'
+    Write-Log -EntryType Information -EventId 61 -Message "Hid Settings App and Control Panel for kiosk user via Non-Administrators Local Group Policy Object.`nlgpo.exe Exit Code: [$LastExitCode]"
+}
 
 # Hide Taskbar Tray if no Wifi Adapter Present.
 If (!$WifiAdapter) {

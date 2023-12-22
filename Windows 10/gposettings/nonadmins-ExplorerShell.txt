@@ -90,11 +90,6 @@ DWORD:67108863
 
 User:Non-Administrators
 Software\Microsoft\Windows\CurrentVersion\Policies\Explorer
-NoControlPanel
-DWORD:1
-
-User:Non-Administrators
-Software\Microsoft\Windows\CurrentVersion\Policies\Explorer
 ClearRecentDocsOnExit
 DWORD:1
 
