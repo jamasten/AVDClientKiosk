@@ -825,6 +825,33 @@ If (Get-ScheduledTask | Where-Object {$_.TaskName -eq "$TaskName"}) {
 
 #endregion Keyboard Filter
 
+#region Prevent Microsoft AAD Broker Timeout
+
+If ($AutoLogon) {
+    $TaskName = "(AVD Client) - Restart AAD Sign-in"
+    $TaskDescription = 'Restarts the AAD Sign-in process if there are no active connections to prevent a stale sign-in attempt.'
+    Write-Log -EntryType Information -EventId 135 -Message "Creating Scheduled Task: '$TaskName'."
+    $TaskScriptEventSource = 'AAD Sign-in Restart'
+    New-EventLog -LogName $EventLog -Source $TaskScriptEventSource -ErrorAction SilentlyContinue
+    $TaskTrigger = New-ScheduledTaskTrigger -AtLogOn -User KioskUser0
+    $TaskTrigger.Delay = 'PT1H'
+    $TaskTrigger.Repetition = (New-ScheduledTaskTrigger -Once -At "12:00 AM" -RepetitionInterval (New-TimeSpan -Hours 1)).Repetition
+    $TaskAction = New-ScheduledTaskAction -Execute "wscript.exe" `
+        -Argument "$SchedTasksScriptsDir\Restart-AADSignIn.vbs /EventLog:`"$EventLog`" /EventSource:`"$TaskScriptEventSource`" /SubscribeUrl:`"$SubscribeUrl`""
+    # Set up scheduled task to run interactively (only when user is logged in)
+    $TaskPrincipal = New-ScheduledTaskPrincipal -UserId KioskUser0 -LogonType Interactive
+    $TaskSettings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 5) -MultipleInstances IgnoreNew -AllowStartIfOnBatteries -Compatibility Win8 -StartWhenAvailable
+    Register-ScheduledTask -TaskName $TaskName -Action $TaskAction -Description $TaskDescription -Principal $TaskPrincipal -Settings $TaskSettings -Trigger $TaskTrigger
+    If (Get-ScheduledTask | Where-Object {$_.TaskName -eq "$TaskName"}) {
+        Write-Log -EntryType Information -EventId 119 -Message "Scheduled Task created successfully."
+    } Else {
+        Write-Log -EntryType Error -EventId 120 -Message "Scheduled Task not created."
+        $ScriptExitCode = 1618
+    }
+}
+
+#endregion Prevent Microsoft AAD Broker Timeout
+
 If ($ScriptExitCode -eq 1618) {
     Write-Log -EntryType Error -EventId 135 -Message "At least one critical failure occurred. Exiting Script and restarting computer."
     Stop-Transcript

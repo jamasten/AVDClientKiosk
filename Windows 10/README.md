@@ -16,9 +16,10 @@ This folder contains a script and supporting artifacts to configure a Windows 10
 
 # Version History
 
-## 4.5 (Current Version)
+## 4.6 (Current Version)
 This is a [Feature] release.
 1. This version is minor change with the addition of the -SharedPC switch parameter. The SharedPC parameter can only be enabled in the non-autologon scenario. It enables Shared PC mode on the system with the Account Management function. Account Management will automatically be enabled and configured to remove the user profile after logoff. SharedPC Mode is documented at https://learn.microsoft.com/en-us/windows/configuration/set-up-shared-or-guest-pc?tabs=ppkg.
+2. Incorporated a new scheduled task in the autologon scenarios that automatically restarts the subscribe process to prevent a AAD.Broker timeout.
 
 ## 4.4 
 This is a [Feature] release.
