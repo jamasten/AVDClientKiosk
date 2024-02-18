@@ -837,7 +837,7 @@ If ($AutoLogon) {
     $TaskTrigger.Delay = 'PT1H'
     $TaskTrigger.Repetition = (New-ScheduledTaskTrigger -Once -At "12:00 AM" -RepetitionInterval (New-TimeSpan -Hours 1)).Repetition
     $TaskAction = New-ScheduledTaskAction -Execute "wscript.exe" `
-        -Argument "$SchedTasksScriptsDir\Restart-AADSignIn.vbs /EventLog:`"$EventLog`" /EventSource:`"$TaskScriptEventSource`" /SubscribeUrl:`"$SubscribeUrl`""
+        -Argument "$SchedTasksScriptsDir\Restart-AADSignIn.vbs"
     # Set up scheduled task to run interactively (only when user is logged in)
     $TaskPrincipal = New-ScheduledTaskPrincipal -UserId KioskUser0 -LogonType Interactive
     $TaskSettings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 5) -MultipleInstances IgnoreNew -AllowStartIfOnBatteries -Compatibility Win8 -StartWhenAvailable

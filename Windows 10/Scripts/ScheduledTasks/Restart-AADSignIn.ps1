@@ -5,10 +5,7 @@ param (
     $EventLog = 'AVD Client Kiosk',
     [Parameter()]
     [string]
-    $EventSource = 'AVD Client Restart',
-    [Parameter()]
-    [string]
-    $SubscribeUrl
+    $EventSource = 'AVD Client Restart'
 )
 $Script:File = $MyInvocation.MyCommand.Name
 $Script:Name=[System.IO.Path]::GetFileNameWithoutExtension($Script:File)
@@ -63,8 +60,6 @@ If ($CachePresent) {
     } Until ($counter -eq 30 -or (!(Get-Process | Where-Object {$_.Name -eq 'msrdcw'})))
 }
 
-Write-EventLog -LogName $EventLog -Source $EventSource -EntryType Information -EventId 536 -Message "Restarting AVD Client and quiting script."
-Start-Process -FilePath "WScript.exe" -ArgumentList "`"$env:SystemDrive\KioskSettings\Launch-AVDClient.vbs`" /SubscribeUrl:`"$SubscribeUrl`""
 Write-EventLog -LogName $EventLog -Source $EventSource -EntryType Information -EventId 540 -Message "Ending '$Script:Name'."
 Exit 0
 #endregion Main
