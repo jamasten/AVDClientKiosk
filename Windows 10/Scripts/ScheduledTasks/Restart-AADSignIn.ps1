@@ -21,7 +21,7 @@ Write-EventLog -LogName $EventLog -Source $EventSource -EventId 530 -EntryType I
 # and other user settings/data that need to be cleared.
 
 If (Test-Path -Path 'HKCU:\Software\Microsoft\RdClientRadc') { $CachePresent = $true }
-$AADBroker = Get-Process | Where-Object ($_.Name -like 'Microsoft.AAD.BrokerPlugin*')
+$AADBroker = Get-Process | Where-Object {$_.Name -like 'Microsoft.AAD.BrokerPlugin*'}
 $MSRDCW = Get-Process | Where-Object {$_.Name -eq 'msrdcw'}
 $MSRDC = Get-Process | Where-Object {$_.Name -eq 'msrdc'}
 

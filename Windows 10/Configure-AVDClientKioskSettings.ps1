@@ -834,8 +834,8 @@ If ($AutoLogon) {
     $TaskScriptEventSource = 'AAD Sign-in Restart'
     New-EventLog -LogName $EventLog -Source $TaskScriptEventSource -ErrorAction SilentlyContinue
     $TaskTrigger = New-ScheduledTaskTrigger -AtLogOn -User KioskUser0
-    $TaskTrigger.Delay = 'PT15M'
-    $TaskTrigger.Repetition = (New-ScheduledTaskTrigger -Once -At "12:00 AM" -RepetitionInterval (New-TimeSpan -Minutes 15)).Repetition
+    $TaskTrigger.Delay = 'PT30M'
+    $TaskTrigger.Repetition = (New-ScheduledTaskTrigger -Once -At "12:00 AM" -RepetitionInterval (New-TimeSpan -Minutes 30)).Repetition
     $TaskAction = New-ScheduledTaskAction -Execute "wscript.exe" `
         -Argument "$SchedTasksScriptsDir\Restart-AADSignIn.vbs"
     # Set up scheduled task to run interactively (only when user is logged in)
