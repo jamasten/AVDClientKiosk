@@ -541,7 +541,7 @@ If (-not ($AVDClientShell)) {
     Write-Log -EntryType Information -EventId 49 -Message "Creating a custom AVD Shortcut in Start Menu."
     [string]$StringVersion = $Version
     $ObjShell = New-Object -ComObject WScript.Shell
-    $DirsShortcuts = "$env:ProgramData\Microsoft\Windows\Start Menu\Programs"
+    $DirsShortcuts = @("$env:ProgramData\Microsoft\Windows\Start Menu\Programs")
     $LinkRemoteDesktop = "Remote Desktop.lnk"
     $PathLinkRD = Join-Path $DirsShortcuts[0] -ChildPath $LinkRemoteDesktop
     $LocationIcon = $ObjShell.CreateShortcut($PathLinkRD).IconLocation
