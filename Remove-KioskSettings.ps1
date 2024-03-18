@@ -9,8 +9,9 @@ param (
 $script:FullName = $MyInvocation.MyCommand.Path
 $script:Dir = Split-Path $script:FullName
 $Script:File = [string]$myInvocation.MyCommand.Name
-[String]$Script:LogDir = "$($env:SystemRoot)\Logs\Configuration"
-$Script:LogName = [io.path]::GetFileNameWithoutExtension($Script:File) + ".log"
+[String]$Script:LogDir = Join-Path -Path $env:SystemRoot -ChildPath "Logs"
+$date = Get-Date -UFormat "%Y-%m-%d %H-%M-%S"
+$Script:LogName = [io.path]::GetFileNameWithoutExtension($Script:File) + "-$date.log"
 $GPODir = "$Script:Dir\gposettings"
 $ToolsDir = "$Script:Dir\Tools"
 $DirConfigurationScripts = "$Script:Dir\Scripts\Configuration"
@@ -104,10 +105,15 @@ Write-Log -EntryType Information -EventId 5 -Message "Executing '$Script:FullNam
 
 # Removing Embedded Shells Configuration
 
-. "$DirConfigurationScripts\ShellLauncherWmiBridgeHelpers.ps1"
-If (Get-ShellLauncherBridgeWMI) {
+. "$DirConfigurationScripts\AssignedAccessWmiBridgeHelpers.ps1"
+If (Get-ShellLauncherConfiguration) {
     Write-Log -EventId 6 -EntryType Information -Message "Removing Shell Launcher settings via WMI Bridge."
-    Clear-ShellLauncherBridgeWMI
+    Clear-ShellLauncherConfiguration
+}
+
+If (Get-MultiAppKioskConfiguration) {
+    Write-Log -EventId 6 -EntryType Information -Message "Removing Multi-App Kiosk Configuration via WMI Bridge."
+    Clear-MultiAppKioskConfiguration
 }
 
 # Removing Non-Administrators Local GPO.
@@ -229,12 +235,14 @@ ForEach ($DirShortcut in $DirsShortcuts) {
     }
 }
 
+# Remove Custom Start Menu
+Get-ChildItem -Path "$env:SystemDrive\Users\Default\AppData\Local\Microsoft\Windows\Shell" -Filter 'LayoutModification.*' | Remove-Item -Force
+
 # Remove Version Registry Entry
 Write-Log -EventId 21 -EntryType Information -Message "Removing Kiosk Registry Key to track install version."
 If (Test-Path -Path 'HKLM:\Software\Kiosk') {
     Remove-Item -Path 'HKLM:\Software\Kiosk' -Recurse -Force
 }
-
 
 # Remove Keyboard Filter
 If ((Get-WindowsOptionalFeature -Online -FeatureName Client-KeyboardFilter).state -eq 'Enabled') {
