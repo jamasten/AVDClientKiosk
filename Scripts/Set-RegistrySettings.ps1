@@ -230,15 +230,15 @@ $Settings = @(
         Path = 'HKCU:\Software\Policies\Microsoft\Windows\Control Panel\Desktop'
         PropertyType = 'String'
         Value = ''
-    },
+    }#,
 
     # Description
-    [PSCustomObject]@{
+<#     [PSCustomObject]@{
         Name = ''
         Path = ''
         PropertyType = 'DWord'
         Value = 0
-    },
+    }, #>
 )
 
 # Set registry settings
