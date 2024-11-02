@@ -258,10 +258,13 @@ foreach($Setting in $Settings)
     {
         New-ItemProperty -Path $Setting.Path -Name $Setting.Name -PropertyType $Setting.PropertyType -Value $Setting.Value -Force | Out-Null
     }
+
     # Updates the registry setting when it already exists
     elseif($Value.$($Setting.Name) -ne $Setting.Value)
     {
         Set-ItemProperty -Path $Setting.Path -Name $Setting.Name -Value $Setting.Value -Force | Out-Null
     }
+
+    # Wait for the registry setting to be applied
     Start-Sleep -Seconds 1 | Out-Null
 }
