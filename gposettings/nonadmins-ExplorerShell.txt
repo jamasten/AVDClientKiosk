@@ -25,11 +25,6 @@ DWORD:1
 
 User:Non-Administrators
 Software\Microsoft\Windows\CurrentVersion\Policies\Explorer
-StartMenuLogOff
-DELETE
-
-User:Non-Administrators
-Software\Microsoft\Windows\CurrentVersion\Policies\Explorer
 TaskbarLockAll
 DWORD:1
 
