@@ -84,3 +84,17 @@ foreach ($Capability in $Capabilities)
         $InstalledCapability | Remove-WindowsCapability -Online
     }
 }
+
+# Remove OneDrive
+if (Test-Path -Path "$env:SystemRoot\Syswow64\onedrivesetup.exe") 
+{
+    Start-Process -FilePath "$env:SystemRoot\Syswow64\onedrivesetup.exe" -ArgumentList "/uninstall" -Wait -ErrorAction SilentlyContinue
+}
+elseif (Test-Path -Path "$env:ProgramFiles\Microsoft OneDrive") 
+{
+    $OneDriveSetup = Get-ChildItem -Path "$env:ProgramFiles\Microsoft OneDrive" -Filter 'onedrivesetup.exe' -Recurse
+    if ($OneDriveSetup) 
+    {
+        Start-Process -FilePath $OneDriveSetup[0].FullName -ArgumentList "/uninstall" -Wait -ErrorAction SilentlyContinue
+    }
+}
