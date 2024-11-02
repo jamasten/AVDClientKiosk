@@ -58,23 +58,29 @@ $WindowsApplications = @(
 $ProvisionedApps = Get-AppxProvisionedPackage -online
 $InstalledApps = Get-AppxPackage -AllUsers
 
-ForEach ($Application in $WindowsApplications) {
-
-    If ($($ProvisionedApps.DisplayName) -contains $Application) {
+foreach ($Application in $WindowsApplications) 
+{
+    # Removes the application packages from Windows so new users will not recieve them
+    if ($($ProvisionedApps.DisplayName) -contains $Application)
+    {
         Get-AppxProvisionedPackage -online | Where-Object {$_.DisplayName -eq "$Application"} | Remove-AppxProvisionedPackage -online
     }
 
-    If ($($InstalledApps.Name) -contains $Application) {
+    # Removes the application packages from all users
+    if ($($InstalledApps.Name) -contains $Application) 
+    {
         Get-AppxPackage -AllUsers | Where-Object { $_.Name -eq "$Application" } | Remove-AppxPackage -AllUsers
     }
 }
 
-# Remove Support Apps
-$capabilitylist = "App.Support.ContactSupport", "App.Support.QuickAssist"
-ForEach ($capability in $capabilitylist) {
+# Removes Windows Capability Packages
+$Capabilities = @("App.Support.ContactSupport", "App.Support.QuickAssist")
+foreach ($Capability in $Capabilities) 
+{
     $InstalledCapability = $null
-    $InstalledCapability = Get-WindowsCapability -Online | Where-Object { $_.Name -like "$capability*" -and $_.State -ne "NotPresent" }
-    If ($InstalledCapability) {
+    $InstalledCapability = Get-WindowsCapability -Online | Where-Object { $_.Name -like "$Capability*" -and $_.State -ne "NotPresent" }
+    if ($InstalledCapability) 
+    {
         $InstalledCapability | Remove-WindowsCapability -Online
     }
 }
