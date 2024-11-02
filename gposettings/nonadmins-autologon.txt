@@ -1,14 +1,4 @@
 User:Non-Administrators
-Software\Microsoft\Windows\CurrentVersion\Policies\Explorer
-StartMenuLogOff
-DWORD:1
-
-User:Non-Administrators
-Software\Microsoft\Windows\CurrentVersion\Policies\Explorer
-NoLogOff
-DWORD:1
-
-User:Non-Administrators
 Software\Microsoft\Windows\CurrentVersion\Policies\System
 DisableChangePassword
 DWORD:1
